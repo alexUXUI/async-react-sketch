@@ -1,70 +1,41 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState, useRef } from "react";
 
-function App({ usesTimeout }) {
-  const [pokemon, setPokemon] = useState(undefined);
+function App() {
+  const [number, setNumber] = useState(undefined);
+  const [letter, setLetter] = useState(undefined);
 
-  useEffect(() => {
-    // add some more side-effecty code to help illustrate
+  const renderCount = useRef(0);
 
-    // this output is logged in our test runner for both tests
-    console.log(`Timeout 1`);
-
-    // this only gets output in the test that uses Async Await
-    setTimeout(() => {
-      console.log(`Timeout 2`);
-    }, 250);
-  }, [pokemon]);
+  console.log(`Render: ${(renderCount.current += 1)}`);
 
   return (
-    <>
-      <ul data-testid="pokemon--async">
-        <button
-          data-testid="set-pokemon"
-          onClick={(e) => {
-            usesTimeout
-              ? setTimeout(() => {
-                  setPokemon(POKEMON);
-                }, 250)
-              : setPokemon(POKEMON);
-          }}
-        >
-          Set pokemon
-        </button>
-        {pokemon && pokemon.length
-          ? pokemon.map((pokemon, idx) => {
-              return (
-                <li key={idx} data-testid={`pokemon--async-${idx + 1}`}>
-                  {pokemon.name}
-                </li>
-              );
-            })
-          : null}
-      </ul>
-    </>
+    <div>
+      Sample component
+      <button
+        data-testid="batched-btn"
+        onClick={(e) => {
+          setNumber(1);
+          setLetter("a");
+        }}
+      >
+        batched updates
+      </button>
+      <button
+        data-testid="unbatched-btn"
+        onClick={(e) => {
+          // react doesnt know how to batch updastes from inside a promise
+          Promise.resolve().then(() => {
+            setNumber(1);
+            setLetter("b");
+          });
+        }}
+      >
+        sync updates
+      </button>
+      {number && <div data-testid="number">{number}</div>}
+      {letter && <div data-testid="letter">{letter}</div>}
+    </div>
   );
 }
-
-const POKEMON = [
-  "bulbasaur",
-  "ivysaur",
-  "venusaur",
-  "charmander",
-  "charmeleon",
-  "charizard",
-  "squirtle",
-  "wartortle",
-  "blastoise",
-  "caterpie",
-  "metapod",
-  "butterfree",
-  "weedle",
-  "kakuna",
-  "beedrill",
-  "pidgey",
-  "pidgeotto",
-  "pidgeot",
-  "rattata",
-  "raticate",
-];
 
 export default App;

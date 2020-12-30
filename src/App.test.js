@@ -1,60 +1,57 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { act } from "react-dom/test-utils";
 import App from "./App";
 
-describe("It has a test suite that tests the behavior", () => {
-  it(`<App /> shows list of pokemon on click`, async () => {
-    // 1) Render the component
-    // 2) At this point, no pokemon are in the DOM
+describe("It tests the behavior of dispatched updates", () => {
+  // this test works because react is able to roll up the
+  // two state updates into one syncronous set state call
+  it("tests batched update behavior", () => {
+    const { getByTestId } = render(<App />);
+    const batchedUpdates = getByTestId("batched-btn");
 
-    const { container, getByTestId, findByTestId, debug } = render(
-      <App usesTimeout={true} />
-    );
+    fireEvent.click(batchedUpdates);
 
-    // 3) Get ref to btn to set pokemon in state
-    const setPokemonBtn = getByTestId("set-pokemon");
+    getByTestId("number");
+    getByTestId("letter");
+  });
 
-    // Search for the existence of the first Pokemon in the DOM,
-    // using getByTestId. this does *not* work.
-    // getByTestId("pokemon--async-1");
+  // This test does not work because the set state update is
+  // asyncronous since there is a promise and react is having to rerender multiple times
+  xit("tests unbatched update behavior", () => {
+    const { getByTestId } = render(<App />);
+    const unbatchedUpdates = getByTestId("unbatched-btn");
 
-    // Eventhough there are no pokemon in the DOM,
-    // using findByTestID works
-    // findByTestId("pokemon--async-1");
+    fireEvent.click(unbatchedUpdates);
 
-    // this, however, does not work
-    // await findByTestId("pokemon--async-1");
+    getByTestId("number");
+    getByTestId("letter");
+  });
 
-    await userEvent.click(setPokemonBtn);
+  // this test works because we await the
+  // next tick of the event loop, and for the micro and macro task queues to flush,
+  // we then retry the assertions in the async waitFor using the sync getBy*
+  it("tests unbatched update behavior", async () => {
+    const { getByTestId } = render(<App />);
+    const unbatchedUpdates = getByTestId("unbatched-btn");
 
-    // button was clicked but this still does not find the pokemon
-    // getByTestId("pokemon--async-1");
-
-    await findByTestId("pokemon--async-1");
+    fireEvent.click(unbatchedUpdates);
 
     await waitFor(() => {
-      /**
-       This works because:
-       If you return a promise in the waitFor callback 
-       (either explicitly or implicitly with async syntax), 
-       then the waitFor utility will not call your callback again until 
-       that promise rejects. This allows you to waitFor things that must be 
-       checked asynchronously.
-       */
-      getByTestId("pokemon--async-1");
+      getByTestId("number");
+      getByTestId("letter");
     });
   });
 
-  it(`<App /> shows list of pokemon on click`, () => {
-    // In this example, we are not using setTimeout
-    const { container, getByTestId, findByTestId, debug } = render(
-      <App usesTimeout={false} />
-    );
+  // this test works but is better because we dont not have to rely on
+  // waitFor, we can use findBy* to get that retry behavior for free!
+  it("tests unbatched update behavior", async () => {
+    const { getByTestId, findByTestId } = render(<App />);
+    const unbatchedUpdates = getByTestId("unbatched-btn");
 
-    const setPokemonBtn = getByTestId("set-pokemon");
+    fireEvent.click(unbatchedUpdates);
 
-    userEvent.click(setPokemonBtn);
-
-    getByTestId("pokemon--async-1");
+    await findByTestId("number");
+    await findByTestId("letter");
   });
 });
